@@ -17,6 +17,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final WebViewController _controller;
+  late final Widget _webViewWidget;
   int _progress = 0;
   bool _tokenInjected = false;
   String _error = '';
@@ -67,6 +68,7 @@ class _HomePageState extends State<HomePage> {
             AppConfig.webBaseUrl,
             headers: {'Authorization': 'Bearer ${session.idToken}'},
           );
+    _webViewWidget = WebViewWidget(controller: _controller);
   }
 
   Future<void> _handleBackNavigation() async {
@@ -95,72 +97,70 @@ class _HomePageState extends State<HomePage> {
         _handleBackNavigation();
       },
       child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          toolbarHeight: 44,
+          titleSpacing: 0,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          actions: [
+            IconButton(
+              tooltip: '刷新',
+              onPressed: _reload,
+              icon: const Icon(Icons.refresh),
+            ),
+            PopupMenuButton<String>(
+              tooltip: '更多',
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'logout') auth.logout();
+              },
+              itemBuilder:
+                  (context) => const [
+                    PopupMenuItem(
+                      value: 'logout',
+                      child: Row(
+                        children: [
+                          Icon(Icons.logout),
+                          SizedBox(width: 10),
+                          Text('退出登录'),
+                        ],
+                      ),
+                    ),
+                  ],
+            ),
+          ],
+          bottom:
+              _progress < 100
+                  ? PreferredSize(
+                    preferredSize: const Size.fromHeight(2),
+                    child: LinearProgressIndicator(value: _progress / 100),
+                  )
+                  : null,
+        ),
         body: SafeArea(
-          child: Stack(
-            children: [
-              if (_error.isEmpty)
-                WebViewWidget(controller: _controller)
-              else
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.wifi_off, size: 48),
-                        const SizedBox(height: 12),
-                        Text(_error, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: _reload,
-                          child: const Text('重试'),
-                        ),
-                      ],
+          top: false,
+          child:
+              _error.isEmpty
+                  ? _webViewWidget
+                  : Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.wifi_off, size: 48),
+                          const SizedBox(height: 12),
+                          Text(_error, textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                            onPressed: _reload,
+                            child: const Text('重试'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Material(
-                  color: Colors.white.withValues(alpha: 0.92),
-                  borderRadius: BorderRadius.circular(18),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        tooltip: '刷新',
-                        onPressed: _reload,
-                        icon: const Icon(Icons.refresh),
-                      ),
-                      PopupMenuButton<String>(
-                        tooltip: '更多',
-                        icon: const Icon(Icons.more_vert),
-                        onSelected: (value) {
-                          if (value == 'logout') auth.logout();
-                        },
-                        itemBuilder:
-                            (context) => const [
-                              PopupMenuItem(
-                                value: 'logout',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.logout),
-                                    SizedBox(width: 10),
-                                    Text('退出登录'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              if (_progress < 100)
-                LinearProgressIndicator(value: _progress / 100),
-            ],
-          ),
         ),
       ),
     );
