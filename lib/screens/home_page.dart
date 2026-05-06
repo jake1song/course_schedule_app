@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../auth/auth_controller.dart';
@@ -28,6 +29,8 @@ class _HomePageState extends State<HomePage> {
     _controller =
         WebViewController()
           ..setJavaScriptMode(JavaScriptMode.unrestricted)
+          ..setBackgroundColor(Colors.white)
+          ..enableZoom(false)
           ..addJavaScriptChannel(
             'NativeAuth',
             onMessageReceived: (message) {
@@ -66,39 +69,98 @@ class _HomePageState extends State<HomePage> {
           );
   }
 
+  Future<void> _handleBackNavigation() async {
+    if (await _controller.canGoBack()) {
+      await _controller.goBack();
+      return;
+    }
+    await SystemNavigator.pop();
+  }
+
+  Future<void> _reload() async {
+    setState(() {
+      _error = '';
+      _progress = 0;
+    });
+    await _controller.reload();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            if (_error.isEmpty)
-              WebViewWidget(controller: _controller)
-            else
-              Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
+    final auth = context.read<AuthController>();
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+        _handleBackNavigation();
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Stack(
+            children: [
+              if (_error.isEmpty)
+                WebViewWidget(controller: _controller)
+              else
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off, size: 48),
+                        const SizedBox(height: 12),
+                        Text(_error, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: _reload,
+                          child: const Text('重试'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Material(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.wifi_off, size: 48),
-                      const SizedBox(height: 12),
-                      Text(_error, textAlign: TextAlign.center),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: () {
-                          setState(() => _error = '');
-                          _controller.reload();
+                      IconButton(
+                        tooltip: '刷新',
+                        onPressed: _reload,
+                        icon: const Icon(Icons.refresh),
+                      ),
+                      PopupMenuButton<String>(
+                        tooltip: '更多',
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (value) {
+                          if (value == 'logout') auth.logout();
                         },
-                        child: const Text('重试'),
+                        itemBuilder:
+                            (context) => const [
+                              PopupMenuItem(
+                                value: 'logout',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.logout),
+                                    SizedBox(width: 10),
+                                    Text('退出登录'),
+                                  ],
+                                ),
+                              ),
+                            ],
                       ),
                     ],
                   ),
                 ),
               ),
-            if (_progress < 100)
-              LinearProgressIndicator(value: _progress / 100),
-          ],
+              if (_progress < 100)
+                LinearProgressIndicator(value: _progress / 100),
+            ],
+          ),
         ),
       ),
     );
