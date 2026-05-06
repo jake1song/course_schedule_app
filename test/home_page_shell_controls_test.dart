@@ -9,9 +9,9 @@ void main() {
     expect(source, contains('PopScope'));
     expect(source, contains('canGoBack()'));
     expect(source, contains('goBack()'));
-    expect(source, contains('Icons.refresh'));
-    expect(source, contains('Icons.logout'));
     expect(source, contains('enableZoom(false)'));
     expect(source, contains('setBackgroundColor'));
+    expect(source, isNot(contains('Icons.refresh')));
+    expect(source, isNot(contains('Icons.logout')));
   });
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/services.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../auth/auth_controller.dart';
 import '../config/app_config.dart';
@@ -18,7 +19,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final WebViewController _controller;
   late final Widget _webViewWidget;
-  int _progress = 0;
   bool _tokenInjected = false;
   String _error = '';
 
@@ -42,7 +42,6 @@ class _HomePageState extends State<HomePage> {
           ..addJavaScriptChannel('NativePush', onMessageReceived: (_) {})
           ..setNavigationDelegate(
             NavigationDelegate(
-              onProgress: (progress) => setState(() => _progress = progress),
               onWebResourceError: (error) {
                 if (error.isForMainFrame ?? false) {
                   setState(() => _error = error.description);
@@ -52,6 +51,7 @@ class _HomePageState extends State<HomePage> {
                 if (_tokenInjected) return;
                 _tokenInjected = true;
                 await _controller.runJavaScript('''
+              document.documentElement.classList.add('app-webview');
               localStorage.setItem('courseScheduleAuthTokenV1', ${jsonEncode(session.idToken)});
               localStorage.setItem('courseScheduleAuthTokenExpiresV1', ${jsonEncode(session.expiresAt.toIso8601String())});
               if (typeof setLockedState === 'function') {
@@ -65,10 +65,31 @@ class _HomePageState extends State<HomePage> {
             ),
           )
           ..loadRequest(
-            AppConfig.webBaseUrl,
+            _nativeAppUrl(),
             headers: {'Authorization': 'Bearer ${session.idToken}'},
           );
-    _webViewWidget = WebViewWidget(controller: _controller);
+    _webViewWidget = _buildWebViewWidget();
+  }
+
+  Widget _buildWebViewWidget() {
+    PlatformWebViewWidgetCreationParams params =
+        PlatformWebViewWidgetCreationParams(controller: _controller.platform);
+
+    if (WebViewPlatform.instance is AndroidWebViewPlatform) {
+      params =
+          AndroidWebViewWidgetCreationParams.fromPlatformWebViewWidgetCreationParams(
+            params,
+            displayWithHybridComposition: true,
+          );
+    }
+
+    return WebViewWidget.fromPlatformCreationParams(params: params);
+  }
+
+  Uri _nativeAppUrl() {
+    return AppConfig.webBaseUrl.replace(
+      queryParameters: {...AppConfig.webBaseUrl.queryParameters, 'app': '1'},
+    );
   }
 
   Future<void> _handleBackNavigation() async {
@@ -79,17 +100,8 @@ class _HomePageState extends State<HomePage> {
     await SystemNavigator.pop();
   }
 
-  Future<void> _reload() async {
-    setState(() {
-      _error = '';
-      _progress = 0;
-    });
-    await _controller.reload();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final auth = context.read<AuthController>();
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -98,71 +110,30 @@ class _HomePageState extends State<HomePage> {
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          toolbarHeight: 44,
-          titleSpacing: 0,
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          actions: [
-            IconButton(
-              tooltip: '刷新',
-              onPressed: _reload,
-              icon: const Icon(Icons.refresh),
-            ),
-            PopupMenuButton<String>(
-              tooltip: '更多',
-              icon: const Icon(Icons.more_vert),
-              onSelected: (value) {
-                if (value == 'logout') auth.logout();
-              },
-              itemBuilder:
-                  (context) => const [
-                    PopupMenuItem(
-                      value: 'logout',
-                      child: Row(
-                        children: [
-                          Icon(Icons.logout),
-                          SizedBox(width: 10),
-                          Text('退出登录'),
-                        ],
-                      ),
-                    ),
-                  ],
-            ),
-          ],
-          bottom:
-              _progress < 100
-                  ? PreferredSize(
-                    preferredSize: const Size.fromHeight(2),
-                    child: LinearProgressIndicator(value: _progress / 100),
-                  )
-                  : null,
-        ),
-        body: SafeArea(
-          top: false,
-          child:
-              _error.isEmpty
-                  ? _webViewWidget
-                  : Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.wifi_off, size: 48),
-                          const SizedBox(height: 12),
-                          Text(_error, textAlign: TextAlign.center),
-                          const SizedBox(height: 16),
-                          FilledButton(
-                            onPressed: _reload,
-                            child: const Text('重试'),
-                          ),
-                        ],
-                      ),
+        body:
+            _error.isEmpty
+                ? _webViewWidget
+                : Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off, size: 48),
+                        const SizedBox(height: 12),
+                        Text(_error, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        FilledButton(
+                          onPressed: () {
+                            setState(() => _error = '');
+                            _controller.reload();
+                          },
+                          child: const Text('重试'),
+                        ),
+                      ],
                     ),
                   ),
-        ),
+                ),
       ),
     );
   }
