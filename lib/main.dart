@@ -5,6 +5,9 @@ import 'auth/auth_api.dart';
 import 'auth/auth_controller.dart';
 import 'auth/secure_token_store.dart';
 import 'config/app_config.dart';
+import 'push/jpush_registrar.dart';
+import 'push/push_device_api.dart';
+import 'push/push_registrar.dart';
 import 'screens/auth_gate.dart';
 
 void main() {
@@ -21,11 +24,20 @@ class CourseScheduleApp extends StatelessWidget {
         Provider<AuthApi>(
           create: (_) => AuthApi(baseUrl: AppConfig.apiBaseUrl),
         ),
+        Provider<PushDeviceApi>(
+          create: (_) => PushDeviceApi(baseUrl: AppConfig.apiBaseUrl),
+        ),
+        Provider<PushRegistrar>(
+          create:
+              (context) =>
+                  JPushRegistrar(pushDeviceApi: context.read<PushDeviceApi>()),
+        ),
         ChangeNotifierProvider<AuthController>(
           create:
               (context) => AuthController(
                 tokenStore: SecureTokenStore(),
                 authApi: context.read<AuthApi>(),
+                pushRegistrar: context.read<PushRegistrar>(),
               ),
         ),
       ],

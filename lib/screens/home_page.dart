@@ -97,6 +97,7 @@ class _HomePageState extends State<HomePage> {
         _handleBackNavigation();
       },
       child: Scaffold(
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           automaticallyImplyLeading: false,
           toolbarHeight: 44,

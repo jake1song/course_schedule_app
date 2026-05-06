@@ -1,8 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+fun localPropertyOrEnv(propertyName: String, envName: String, defaultValue: String = ""): String {
+    return localProperties.getProperty(propertyName) ?: System.getenv(envName) ?: defaultValue
 }
 
 android {
@@ -28,6 +40,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["JPUSH_PKGNAME"] = "com.szk333333.course_schedule_app"
+        manifestPlaceholders["JPUSH_APPKEY"] = localPropertyOrEnv("jpush.appKey", "JPUSH_APP_KEY")
+        manifestPlaceholders["JPUSH_CHANNEL"] = localPropertyOrEnv("jpush.channel", "JPUSH_CHANNEL", "developer-default")
     }
 
     buildTypes {

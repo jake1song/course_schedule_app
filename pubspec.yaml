@@ -38,6 +38,7 @@ dependencies:
   http: ^1.2.2
   provider: ^6.1.2
   webview_flutter: ^4.10.0
+  jpush_flutter: ^3.4.4
 
 dev_dependencies:
   flutter_test:
