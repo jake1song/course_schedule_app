@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import 'auth_api.dart';
@@ -32,7 +34,7 @@ class AuthController extends ChangeNotifier {
         )) {
       session = stored;
       status = AuthStatus.authenticated;
-      await _registerPushDevice();
+      _registerPushDeviceInBackground();
     } else if (stored != null && _authApi != null) {
       try {
         final refreshed = await _authApi.refresh(stored.refreshToken);
@@ -43,7 +45,7 @@ class AuthController extends ChangeNotifier {
           expiresAt: refreshed.expiresAt,
         );
         status = AuthStatus.authenticated;
-        await _registerPushDevice();
+        _registerPushDeviceInBackground();
       } catch (_) {
         await _tokenStore.clear();
         status = AuthStatus.unauthenticated;
@@ -71,7 +73,7 @@ class AuthController extends ChangeNotifier {
         expiresAt: authSession.expiresAt,
       );
       status = AuthStatus.authenticated;
-      await _registerPushDevice();
+      _registerPushDeviceInBackground();
     } on AuthApiException catch (error) {
       errorMessage = error.message;
       status = AuthStatus.unauthenticated;
@@ -87,7 +89,7 @@ class AuthController extends ChangeNotifier {
       expiresAt: authSession.expiresAt,
     );
     status = AuthStatus.authenticated;
-    await _registerPushDevice();
+    _registerPushDeviceInBackground();
     notifyListeners();
   }
 
@@ -96,6 +98,10 @@ class AuthController extends ChangeNotifier {
     session = null;
     status = AuthStatus.unauthenticated;
     notifyListeners();
+  }
+
+  void _registerPushDeviceInBackground() {
+    unawaited(Future<void>.microtask(_registerPushDevice));
   }
 
   Future<void> _registerPushDevice() async {
