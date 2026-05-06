@@ -8,7 +8,7 @@ void main() {
         File('android/app/src/main/AndroidManifest.xml').readAsStringSync();
     final homePage = File('lib/screens/home_page.dart').readAsStringSync();
 
-    expect(manifest, contains('android:windowSoftInputMode="adjustPan"'));
+    expect(manifest, contains('android:windowSoftInputMode="adjustNothing"'));
     expect(homePage, contains('resizeToAvoidBottomInset: false'));
   });
 }
