@@ -57,3 +57,7 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    implementation("cn.jiguang.sdk:jpush:6.0.1")
+}
