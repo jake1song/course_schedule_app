@@ -50,7 +50,12 @@ class _HomePageState extends State<HomePage> {
                 await _controller.runJavaScript('''
               localStorage.setItem('courseScheduleAuthTokenV1', ${jsonEncode(session.idToken)});
               localStorage.setItem('courseScheduleAuthTokenExpiresV1', ${jsonEncode(session.expiresAt.toIso8601String())});
-              location.reload();
+              if (typeof setLockedState === 'function') {
+                setLockedState(false);
+              }
+              if (typeof loadAppData === 'function') {
+                Promise.resolve(loadAppData()).catch(function () {});
+              }
             ''');
               },
             ),
