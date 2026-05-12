@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+import '../config/app_theme.dart';
 import '../services/update_service.dart';
 
 class UpdateDialog extends StatefulWidget {
@@ -36,11 +37,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
   static const _channel = MethodChannel('com.szk333333.course_schedule_app/installer');
 
   Future<void> _downloadAndInstall() async {
-    setState(() {
-      _downloading = true;
-      _progress = 0;
-      _error = null;
-    });
+    setState(() { _downloading = true; _progress = 0; _error = null; });
 
     try {
       final dir = await getExternalStorageDirectory();
@@ -67,7 +64,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
       if (mounted) {
         setState(() => _progress = 1.0);
         await Future.delayed(const Duration(milliseconds: 300));
-
         await _channel.invokeMethod('install', {'path': file.path});
       }
     } on PlatformException catch (e) {
@@ -80,19 +76,26 @@ class _UpdateDialogState extends State<UpdateDialog> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '安装失败: $e');
-      if (mounted) setState(() => _downloading = false);
+      if (mounted) {
+        setState(() => _error = '安装失败: $e');
+        _downloading = false;
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Row(
         children: [
-          const Icon(Icons.system_update, color: Color(0xFF0066FF)),
-          const SizedBox(width: 10),
-          Text('发现新版本 ${widget.update.versionName}'),
+          Container(
+            width: 40, height: 40,
+            decoration: BoxDecoration(gradient: AppTheme.primaryGradient, borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.system_update, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text('发现新版本 ${widget.update.versionName}', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600))),
         ],
       ),
       content: Column(
@@ -100,15 +103,23 @@ class _UpdateDialogState extends State<UpdateDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (widget.update.changelog.isNotEmpty && !_downloading) ...[
-            const Text('更新内容：', style: TextStyle(fontWeight: FontWeight.w600)),
+            const Text('更新内容：', style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
             const SizedBox(height: 6),
-            Text(widget.update.changelog),
+            Text(widget.update.changelog, style: AppTheme.captionText),
           ],
           if (_downloading) ...[
             const SizedBox(height: 8),
-            LinearProgressIndicator(value: _progress > 0 ? _progress : null),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: _progress > 0 ? _progress : null,
+                minHeight: 6,
+                backgroundColor: AppTheme.primaryStart.withAlpha(30),
+                valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryStart),
+              ),
+            ),
             const SizedBox(height: 8),
-            Text(_progress > 0 ? '下载中 ${(_progress * 100).toStringAsFixed(0)}%' : '正在连接...', style: const TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+            Text(_progress > 0 ? '下载中 ${(_progress * 100).toStringAsFixed(0)}%' : '正在连接...', style: AppTheme.tinyText),
           ],
           if (_error != null) ...[
             const SizedBox(height: 8),
@@ -121,10 +132,14 @@ class _UpdateDialogState extends State<UpdateDialog> {
           onPressed: _downloading ? null : () => Navigator.of(context).pop(),
           child: const Text('稍后'),
         ),
-        FilledButton.icon(
-          icon: _downloading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.download, size: 18),
-          label: Text(_downloading ? '下载中' : '下载更新'),
-          onPressed: _downloading ? null : _downloadAndInstall,
+        Container(
+          decoration: BoxDecoration(gradient: AppTheme.primaryGradient, borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
+          child: FilledButton.icon(
+            icon: _downloading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.download, size: 18),
+            label: Text(_downloading ? '下载中' : '下载更新'),
+            onPressed: _downloading ? null : _downloadAndInstall,
+            style: FilledButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.smallRadius))),
+          ),
         ),
       ],
     );

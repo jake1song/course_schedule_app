@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../auth/auth_api.dart';
 import '../auth/auth_controller.dart';
+import '../config/app_theme.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -41,30 +42,65 @@ class _RegisterPageState extends State<RegisterPage> {
   Widget build(BuildContext context) {
     final auth = context.watch<AuthController>();
     final isLoading = auth.status == AuthStatus.loading;
+    final height = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('注册账号')),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  TextField(controller: _phoneController, keyboardType: TextInputType.phone, textInputAction: TextInputAction.next, onChanged: (_) => setState(() {}), decoration: InputDecoration(labelText: '手机号', prefixIcon: const Icon(Icons.phone_outlined, color: Color(0xFF9CA3AF)), errorText: _phoneError())),
-                  const SizedBox(height: 14),
-                  Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: TextField(controller: _codeController, keyboardType: TextInputType.number, textInputAction: TextInputAction.next, decoration: const InputDecoration(labelText: '验证码', prefixIcon: Icon(Icons.sms_outlined, color: Color(0xFF9CA3AF))))), const SizedBox(width: 12), OutlinedButton(onPressed: isLoading ? null : _requestSms, child: const Text('获取验证码'))]),
-                  const SizedBox(height: 14),
-                  TextField(controller: _passwordController, obscureText: _obscurePassword, textInputAction: TextInputAction.done, onSubmitted: (_) => _register(), onChanged: (_) => setState(() {}), decoration: InputDecoration(labelText: '设置密码', helperText: '至少 8 位', prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF9CA3AF)), suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: const Color(0xFF9CA3AF)), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)), errorText: _passwordError())),
-                  if (_smsMessage.isNotEmpty) ...[const SizedBox(height: 12), Text(_smsMessage, style: const TextStyle(color: Color(0xFFEF4444)))],
-                  if (auth.errorMessage.isNotEmpty) ...[const SizedBox(height: 12), Text(auth.errorMessage, style: const TextStyle(color: Color(0xFFEF4444)))],
-                  const SizedBox(height: 24),
-                  FilledButton(onPressed: isLoading ? null : _register, child: Text(isLoading ? '处理中...' : '注册并登录')),
-                ],
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              height: height * 0.32,
+              width: double.infinity,
+              decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+              child: SafeArea(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 64, height: 64,
+                      decoration: BoxDecoration(color: Colors.white.withAlpha(51), borderRadius: BorderRadius.circular(20)),
+                      child: const Icon(Icons.person_add_outlined, size: 30, color: Colors.white),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('注册账号', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.white)),
+                  ],
+                ),
               ),
             ),
-          ),
+            Transform.translate(
+              offset: const Offset(0, -28),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: AppTheme.screenHPadding),
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: const [AppTheme.cardShadow]),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    TextField(controller: _phoneController, keyboardType: TextInputType.phone, textInputAction: TextInputAction.next, onChanged: (_) => setState(() {}), decoration: InputDecoration(labelText: '手机号', prefixIcon: const Icon(Icons.phone_outlined, color: AppTheme.textTertiary), errorText: _phoneError())),
+                    const SizedBox(height: 16),
+                    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Expanded(child: TextField(controller: _codeController, keyboardType: TextInputType.number, textInputAction: TextInputAction.next, decoration: const InputDecoration(labelText: '验证码', prefixIcon: Icon(Icons.sms_outlined, color: AppTheme.textTertiary)))),
+                      const SizedBox(width: 12),
+                      OutlinedButton(onPressed: isLoading ? null : _requestSms, child: const Text('获取验证码')),
+                    ]),
+                    const SizedBox(height: 16),
+                    TextField(controller: _passwordController, obscureText: _obscurePassword, textInputAction: TextInputAction.done, onSubmitted: (_) => _register(), onChanged: (_) => setState(() {}), decoration: InputDecoration(labelText: '设置密码', helperText: '至少 8 位', prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.textTertiary), suffixIcon: IconButton(icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility, color: AppTheme.textTertiary), onPressed: () => setState(() => _obscurePassword = !_obscurePassword)), errorText: _passwordError())),
+                    if (_smsMessage.isNotEmpty) ...[const SizedBox(height: 12), Text(_smsMessage, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13))],
+                    if (auth.errorMessage.isNotEmpty) ...[const SizedBox(height: 12), Text(auth.errorMessage, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 13))],
+                    const SizedBox(height: 24),
+                    Container(
+                      decoration: BoxDecoration(gradient: AppTheme.primaryGradient, borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
+                      child: FilledButton(
+                        onPressed: isLoading ? null : _register,
+                        style: FilledButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, minimumSize: const Size.fromHeight(48), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.smallRadius))),
+                        child: Text(isLoading ? '处理中...' : '注册并登录', style: const TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

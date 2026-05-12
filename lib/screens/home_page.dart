@@ -6,10 +6,10 @@ import 'package:provider/provider.dart';
 import '../auth/auth_api.dart';
 import '../auth/auth_controller.dart';
 import '../config/app_config.dart';
+import '../config/app_theme.dart';
 import '../models/native_course.dart';
 import '../services/update_service.dart';
 import '../util/app_logger.dart';
-import '../widgets/action_strip.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/nav_tab.dart';
 import '../widgets/schedule_row_tile.dart';
@@ -127,7 +127,7 @@ class _HomePageState extends State<HomePage> {
     final time = AppConfig.periodTimes[course.period] ?? course.period;
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(borderRadius: AppTheme.topSheetRadius),
       builder: (_) => Padding(
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
         child: Column(
@@ -136,7 +136,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: const Color(0xFFD1D5DB), borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 20),
-            Text(course.course, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
+            Text(course.course, style: AppTheme.pageTitle),
             const SizedBox(height: 16),
             _D(Icons.calendar_today_outlined, '第${course.week}周  $course.day  $course.period'),
             _D(Icons.access_time, time),
@@ -156,76 +156,189 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ── Header ──
+
+  Widget _buildHeader(NativeCourseSchedule sched) {
+    final ew = _effectiveWeek(sched);
+    final monday = AppConfig.teachingWeekStarts[ew];
+    final sunday = monday?.add(const Duration(days: 6));
+    final dateStr = monday != null ? '${monday.month}.${sunday!.month}  ·  ${monday.day} - ${sunday.day}' : '';
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 12, 20, 50),
+      decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('第 $ew 周', style: AppTheme.heroTitle),
+                    const SizedBox(height: 4),
+                    if (dateStr.isNotEmpty) Text(dateStr, style: const TextStyle(fontSize: 14, color: Color(0xB3FFFFFF))),
+                  ],
+                ),
+              ),
+              _headerIcon(Icons.settings_outlined, _openSettings),
+              _headerIcon(Icons.upload_file_rounded, _openImport),
+              _headerIcon(Icons.auto_awesome, _openAi),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // Capsule week selector
+          _buildWeekPills(sched.weeks, ew),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerIcon(IconData icon, VoidCallback onTap) => Padding(
+    padding: const EdgeInsets.only(left: 4),
+    child: IconButton(
+      icon: Icon(icon, size: 22, color: Colors.white.withAlpha(200)),
+      onPressed: onTap, visualDensity: VisualDensity.compact, splashRadius: 20,
+    ),
+  );
+
+  Widget _buildWeekPills(List<int> weeks, int selected) {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: weeks.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final w = weeks[i];
+          final wMon = AppConfig.teachingWeekStarts[w];
+          final isSelected = w == selected;
+          return GestureDetector(
+            onTap: () { setState(() => _selectedWeek = w); _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut); },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: isSelected ? AppTheme.primaryGradient : null,
+                color: isSelected ? null : Colors.white.withAlpha(51),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                wMon != null ? '${wMon.month}.${wMon.day}' : '$w',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: isSelected ? Colors.white : const Color(0xCCFFFFFF)),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ── Body ──
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) { if (didPop) return; SystemNavigator.pop(); },
       child: Scaffold(
-        body: SafeArea(
-          child: FutureBuilder<NativeCourseSchedule>(
-            future: _coursesFuture,
-            builder: (context, snap) {
-              if (snap.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFF0066FF)));
-              if (snap.hasError) return Center(
+        body: FutureBuilder<NativeCourseSchedule>(
+          future: _coursesFuture,
+          builder: (context, snap) {
+            if (snap.connectionState == ConnectionState.waiting) {
+              return Container(
+                decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+                child: const Center(child: CircularProgressIndicator(color: Colors.white)),
+              );
+            }
+            if (snap.hasError) {
+              return Container(
+              decoration: const BoxDecoration(gradient: AppTheme.primaryGradient),
+              child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.wifi_off_rounded, size: 48, color: Color(0xFFD1D5DB)),
+                      const Icon(Icons.wifi_off_rounded, size: 48, color: Color(0x99FFFFFF)),
                       const SizedBox(height: 16),
-                      Text(snap.error.toString().replaceFirst('Exception: ', ''), textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF6B7280))),
+                      Text(snap.error.toString().replaceFirst('Exception: ', ''), textAlign: TextAlign.center, style: const TextStyle(color: Color(0xCCFFFFFF))),
                       const SizedBox(height: 20),
-                      OutlinedButton(onPressed: _reloadCourses, child: const Text('重试')),
+                      OutlinedButton(
+                        onPressed: _reloadCourses,
+                        style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white54)),
+                        child: const Text('重试'),
+                      ),
                     ],
                   ),
                 ),
-              );
-              final sched = snap.data ?? NativeCourseSchedule.empty;
-              final ew = _effectiveWeek(sched);
-              final rows = sched.rowsByWeek[ew] ?? const <ScheduleRow>[];
+              ),
+            );
+            }
+            final sched = snap.data ?? NativeCourseSchedule.empty;
+            final ew = _effectiveWeek(sched);
+            final rows = sched.rowsByWeek[ew] ?? const <ScheduleRow>[];
 
-              return CustomScrollView(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                slivers: [
-                  SliverToBoxAdapter(child: ActionStrip(selectedWeek: ew, totalCount: sched.coursesByWeek[ew]?.length ?? 0, weeks: sched.weeks, onWeekSelected: (w) { setState(() => _selectedWeek = w); _scrollController.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeOut); }, onImport: _openImport, onAi: _openAi, onSettings: _openSettings)),
-                  if (rows.isEmpty)
-                    SliverFillRemaining(child: EmptyState(onImport: _openImport))
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                      sliver: SliverList(delegate: SliverChildBuilderDelegate((_, i) {
-                        final row = rows[i];
-                        return Padding(
-                          padding: EdgeInsets.only(bottom: row.course != null ? 8.0 : 6.0),
-                          child: ScheduleRowTile(row: row, periodTimes: AppConfig.periodTimes, onTap: row.course != null ? () => _showDetail(row.course!) : null),
-                        );
-                      }, childCount: rows.length)),
-                    ),
-                ],
-              );
-            },
-          ),
+            return Column(
+              children: [
+                _buildHeader(sched),
+                Expanded(
+                  child: rows.isEmpty
+                      ? EmptyState(onImport: _openImport)
+                      : CustomScrollView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          slivers: [
+                            SliverPadding(
+                              padding: const EdgeInsets.fromLTRB(AppTheme.screenHPadding, 12, AppTheme.screenHPadding, 120),
+                              sliver: SliverList(delegate: SliverChildBuilderDelegate((_, i) {
+                                final row = rows[i];
+                                return Padding(
+                                  padding: EdgeInsets.only(bottom: row.course != null ? 8.0 : 20.0),
+                                  child: ScheduleRowTile(row: row, periodTimes: AppConfig.periodTimes, onTap: row.course != null ? () => _showDetail(row.course!) : null),
+                                );
+                              }, childCount: rows.length)),
+                            ),
+                          ],
+                        ),
+                ),
+              ],
+            );
+          },
         ),
-        bottomNavigationBar: Container(
-          decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: const Color(0x0A000000), blurRadius: 10, offset: const Offset(0, -2))]),
-          padding: EdgeInsets.fromLTRB(8, 6, 8, 6 + MediaQuery.of(context).padding.bottom),
-          child: Row(children: [
-            NavTab(icon: Icons.add_circle_outline, label: '新增', onTap: _openAdd),
-            NavTab(icon: Icons.upload_file_rounded, label: '导入', onTap: _openImport),
-            NavTab(icon: Icons.today_rounded, label: '课表', onTap: () => _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut)),
-            NavTab(icon: Icons.auto_awesome, label: 'AI', onTap: _openAi),
-          ]),
+        bottomNavigationBar: _buildFloatingNav(),
+      ),
+    );
+  }
+
+  Widget _buildFloatingNav() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white.withAlpha(235),
+          borderRadius: AppTheme.pillBorderRadius,
+          boxShadow: const [AppTheme.floatingNavShadow],
         ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Row(children: [
+          NavTab(icon: Icons.add_circle_outline, label: '新增', onTap: _openAdd),
+          NavTab(icon: Icons.upload_file_rounded, label: '导入', onTap: _openImport),
+          NavTab(icon: Icons.today_rounded, label: '课表', onTap: () => _scrollController.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeOut)),
+          NavTab(icon: Icons.auto_awesome, label: 'AI', onTap: _openAi),
+        ]),
       ),
     );
   }
 
   void _openSettings() => showModalBottomSheet(
     context: context,
-    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    shape: const RoundedRectangleBorder(borderRadius: AppTheme.topSheetRadius),
     builder: (_) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
@@ -235,7 +348,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             Center(child: Container(width: 36, height: 4, decoration: BoxDecoration(color: const Color(0xFFD1D5DB), borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 20),
-            const Text('设置', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF1F2937))),
+            Text('设置', style: AppTheme.pageTitle),
             const SizedBox(height: 16),
             _SettingRow('版本', _appVersion),
             _SettingRow('服务器', AppConfig.apiBaseUrl.host),
@@ -258,7 +371,7 @@ class _D extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(children: [Icon(icon, size: 18, color: const Color(0xFF9CA3AF)), const SizedBox(width: 12), Expanded(child: Text(text, style: const TextStyle(fontSize: 15, color: Color(0xFF6B7280))))]),
+    child: Row(children: [Icon(icon, size: 18, color: AppTheme.textTertiary), const SizedBox(width: 12), Expanded(child: Text(text, style: AppTheme.captionText))]),
   );
 }
 
@@ -268,6 +381,6 @@ class _SettingRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
-    child: Row(children: [Text(title, style: const TextStyle(color: Color(0xFF6B7280))), const Spacer(), Text(subtitle, style: const TextStyle(fontWeight: FontWeight.w500, color: Color(0xFF1F2937)))]),
+    child: Row(children: [Text(title, style: const TextStyle(color: AppTheme.textSecondary)), const Spacer(), Text(subtitle, style: const TextStyle(fontWeight: FontWeight.w500, color: AppTheme.textPrimary))]),
   );
 }

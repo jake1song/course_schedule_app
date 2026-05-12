@@ -5,6 +5,7 @@ import 'auth/auth_api.dart';
 import 'auth/auth_controller.dart';
 import 'auth/secure_token_store.dart';
 import 'config/app_config.dart';
+import 'config/app_theme.dart';
 import 'screens/auth_gate.dart';
 
 void main() {
@@ -32,36 +33,31 @@ class CourseScheduleApp extends StatelessWidget {
         title: '课表星图',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0066FF)),
-          scaffoldBackgroundColor: const Color(0xFFF7F8FA),
+          colorScheme: ColorScheme.fromSeed(seedColor: AppTheme.primaryStart),
+          scaffoldBackgroundColor: AppTheme.background,
           appBarTheme: const AppBarTheme(
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.white,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
             elevation: 0,
-            titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFF1F2937)),
+            titleTextStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
           ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE5E7EB))),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF0066FF), width: 1.5)),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
+          inputDecorationTheme: AppTheme.inputDecorationTheme,
           filledButtonTheme: FilledButtonThemeData(
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF0066FF),
+              backgroundColor: AppTheme.primaryStart,
               minimumSize: const Size.fromHeight(48),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
             ),
           ),
           outlinedButtonTheme: OutlinedButtonThemeData(
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF1F2937),
+              foregroundColor: AppTheme.textPrimary,
               side: const BorderSide(color: Color(0xFFE5E7EB)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.smallRadius)),
             ),
           ),
           textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFF0066FF)),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.primaryStart),
           ),
           useMaterial3: true,
         ),

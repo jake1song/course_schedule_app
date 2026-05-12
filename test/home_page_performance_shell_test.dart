@@ -10,7 +10,7 @@ void main() {
 
       expect(source, contains('FutureBuilder<NativeCourseSchedule>'));
       expect(source, contains('rowsByWeek'));
-      expect(source, contains('ListView.builder'));
+      expect(source, contains('SliverList'));
       expect(source, contains('_openImport'));
       expect(source, contains('_openAi'));
       expect(source, isNot(contains('_webViewWidget')));
@@ -40,13 +40,12 @@ void main() {
     expect(source, contains('factory NativeCourseSchedule.fromCourses'));
   });
 
-  test('RefreshIndicator waits for the native course reload request', () {
+  test('Course reload works with Future-assign + setState pattern', () {
     final source = File('lib/screens/home_page.dart').readAsStringSync();
 
     expect(source, contains('Future<void> _reloadCourses()'));
-    expect(source, contains('final reloaded = _loadNativeCourses();'));
-    expect(source, contains('await reloaded;'));
-    expect(source, contains('onRefresh: _reloadCourses'));
+    expect(source, contains('final r = _loadNativeCourses();'));
+    expect(source, contains('_scrollToToday(await r)'));
   });
 
   test('native course request delegates to AuthApi with bounded timeout', () {

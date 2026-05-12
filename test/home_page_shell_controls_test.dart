@@ -28,10 +28,12 @@ void main() {
 
   test('AI chat page provides native chat UI', () {
     final source = File('lib/screens/ai_chat_page.dart').readAsStringSync();
+    final bubbleSource = File('lib/widgets/chat_bubble.dart').readAsStringSync();
 
     expect(source, contains('ListView.builder'));
-    expect(source, contains('_ChatBubble'));
+    expect(source, contains('ChatBubble'));
     expect(source, contains('_send('));
     expect(source, contains('IconButton'));
+    expect(bubbleSource, contains('class ChatBubble'));
   });
 }

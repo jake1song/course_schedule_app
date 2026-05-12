@@ -9,7 +9,7 @@ class WeekNumberField extends StatelessWidget {
   Widget build(BuildContext context) => TextField(
     controller: TextEditingController(text: '$value'),
     keyboardType: TextInputType.number,
-    decoration: const InputDecoration(labelText: '周次', border: OutlineInputBorder()),
+    decoration: const InputDecoration(labelText: '周次'),
     onChanged: (v) {
       final n = int.tryParse(v);
       if (n != null && n >= 1 && n <= 30) onChanged(n);
@@ -27,7 +27,7 @@ class DayDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
     value: items.contains(value) ? value : items.first,
-    decoration: const InputDecoration(labelText: '星期', border: OutlineInputBorder()),
+    decoration: const InputDecoration(labelText: '星期'),
     items: items.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
     onChanged: onChanged,
   );
@@ -43,7 +43,7 @@ class PeriodDropdown extends StatelessWidget {
   @override
   Widget build(BuildContext context) => DropdownButtonFormField<String>(
     value: items.contains(value) ? value : items.first,
-    decoration: const InputDecoration(labelText: '节次', border: OutlineInputBorder()),
+    decoration: const InputDecoration(labelText: '节次'),
     items: items.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
     onChanged: onChanged,
   );
