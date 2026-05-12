@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:course_schedule_app/auth/auth_api.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +7,25 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  test('login times out instead of leaving auth loading forever', () async {
+    final api = AuthApi(
+      baseUrl: Uri.parse('http://example.test/api'),
+      timeout: const Duration(milliseconds: 20),
+      client: MockClient((request) => Completer<http.Response>().future),
+    );
+
+    expect(
+      () => api.login(phone: '13800138000', password: 'pass123456'),
+      throwsA(
+        isA<AuthApiException>().having(
+          (error) => error.message,
+          'message',
+          contains('请求超时'),
+        ),
+      ),
+    );
+  });
+
   test('login returns parsed auth session', () async {
     final api = AuthApi(
       baseUrl: Uri.parse('http://example.test/api'),
