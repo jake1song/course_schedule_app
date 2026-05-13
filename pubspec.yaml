@@ -1,7 +1,7 @@
 name: course_schedule_app
 description: "课表星图 - 课程表与 AI 日程助手"
 publish_to: 'none'
-version: 1.4.1+26
+version: 1.5.0+27
 
 environment:
   sdk: ^3.7.2
