@@ -305,11 +305,11 @@ class _AiChatPageState extends State<AiChatPage> {
       child: Row(children: [
         Expanded(
           child: Container(
-            decoration: BoxDecoration(color: Colors.white.withAlpha(38), borderRadius: BorderRadius.circular(24)),
+            decoration: BoxDecoration(color: Colors.white.withAlpha(60), borderRadius: BorderRadius.circular(24)),
             child: TextField(
               controller: _inputController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(hintText: '输入问题...', hintStyle: TextStyle(color: Color(0x99FFFFFF)), border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
+              style: AppTheme.bodyText,
+              decoration: const InputDecoration(hintText: '输入问题...', hintStyle: TextStyle(color: AppTheme.textTertiary), border: InputBorder.none, contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 12)),
               minLines: 1, maxLines: 4,
               onSubmitted: (_) => _send(),
             ),
